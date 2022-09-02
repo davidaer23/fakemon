@@ -4,7 +4,6 @@ const mongoose = require('mongoose')
 const Fakemon = require('./models/fakemon')
 const Move = require('./models/move')
 const moveDamageClass = require('./models/moveDamageClass')
-const MoveDamageClass = require('./models/moveDamageClass')
 const Type = require('./models/type')
 
 
@@ -154,7 +153,10 @@ const typeDefs = gql`
         ): Type
         deleteMove(
             name: String!
-        ): Move
+        ): Move, 
+        deleteMoveClass(
+            name: String!
+        ): MoveDamageClass
     }
 
 `
@@ -224,7 +226,7 @@ const resolvers = {
             return  Move.find({}).sort(sort)
         },
 
-        allMovesDC: async () => MoveDamageClass.find({}),
+        allMovesDC: async () => moveDamageClass.find({}),
 
         allTypes: async (root, args) => {
             // Filtrar por nombre
@@ -243,7 +245,7 @@ const resolvers = {
             const moves = await Move.find({_id:{ $in: root.moves}})
             return moves.map(d => {return d._doc})
         },
-        types: async (root) => typeDamage(root.type)
+        types: async (root) => typeDamage(root.types)
 
     },
 
@@ -472,8 +474,33 @@ const resolvers = {
             return fakemon
         },
         deleteFakemon: async (root, args) => await Fakemon.findOneAndDelete({name: args.name}),
-        deleteType: async (root, args) => await Type.findOneAndDelete({name: args.name}),
-        deleteMove: async (root, args) => await Move.findOneAndDelete({name: args.name}),
+        deleteType: async (root, args) => {
+            const type = await Type.findOneAndDelete({name: args.name})
+            await Type.updateMany({"no_damage_to": type._id}, {$pull: {"no_damage_to":type._id}})
+            await Type.updateMany({"half_damage_to": type._id}, {$pull: {"half_damage_to":type._id}})
+            await Type.updateMany({"double_damage_to": type._id}, {$pull: {"double_damage_to":type._id}})
+            await Type.updateMany({"no_damage_from": type._id}, {$pull: {"no_damage_from":type._id}})
+            await Type.updateMany({"half_damage_from": type._id}, {$pull: {"half_damage_from":type._id}})
+            await Type.updateMany({"double_damage_from": type._id}, {$pull: {"double_damage_from":type._id}})
+            const move =  await Move.findOne({"type": type._id})
+            move.type=null
+            await move.save()
+            await Fakemon.updateMany({"types": type._id}, {$pull: {"types":type._id}})
+            return type
+
+        },
+        deleteMove: async (root, args) =>{
+            const move = await Move.findOneAndDelete({name: args.name})
+            await Fakemon.updateMany({"moves": move._id}, {$pull: {"moves":move._id}})
+            return move
+        },
+        deleteMoveClass: async(root, args) =>{
+            const moveDC = await moveDamageClass.findOneAndDelete({name: args.name})
+            const move =  await Move.findOne({"damage_class": moveDC._id})
+            move.damage_class=null
+            await move.save()
+            return moveDC
+        }
         
     }
 }
