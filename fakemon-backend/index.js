@@ -145,6 +145,16 @@ const typeDefs = gql`
             hp: Int
             image: String
         ): Fakemon
+
+        deleteFakemon(
+            name: String!
+        ): Fakemon
+        deleteType(
+            name: String!
+        ): Type
+        deleteMove(
+            name: String!
+        ): Move
     }
 
 `
@@ -460,7 +470,11 @@ const resolvers = {
                 })
             }
             return fakemon
-        }
+        },
+        deleteFakemon: async (root, args) => await Fakemon.findOneAndDelete({name: args.name}),
+        deleteType: async (root, args) => await Type.findOneAndDelete({name: args.name}),
+        deleteMove: async (root, args) => await Move.findOneAndDelete({name: args.name}),
+        
     }
 }
 
