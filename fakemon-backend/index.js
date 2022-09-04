@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { ApolloServer, gql, UserInputError } = require('apollo-server')
 const mongoose = require('mongoose')
 // Models
@@ -8,11 +9,10 @@ const Type = require('./models/type')
 
 
 // Conection
-const MONGO_URI = 'mongodb+srv://david102:david102@cluster0.oyegz.mongodb.net/Fakemon-db?retryWrites=true&w=majority'
+const mongo_uri=process.env.MONGO_URI
+console.log('connecting to ', mongo_uri)
 
-console.log('connecting to ', MONGO_URI)
-
-mongoose.connect(MONGO_URI)
+mongoose.connect(mongo_uri)
     .then(() => {
         console.log('connected to MongoDB')
     })
